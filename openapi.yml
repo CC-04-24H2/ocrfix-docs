@@ -1,0 +1,407 @@
+openapi: 3.0.3
+info:
+  title: OCRfix RESTful API Contract
+  version: "1.0"
+  description: List of API for OCRfix API
+paths:
+  /auth/register:
+    post:
+      tags:
+        - auth
+      description: Register new user to access OCRfix
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  $ref: "#/components/schemas/Email"
+                name:
+                  type: string
+                  nullable: false
+                  example: John Doe
+                password:
+                  $ref: "#/components/schemas/Password"
+              required:
+                - email
+                - name
+                - password
+      responses:
+        201:
+          $ref: "#/components/responses/201"
+        400:
+          $ref: "#/components/responses/400"
+        500:
+          $ref: "#/components/responses/500"
+
+  /auth/login:
+    post:
+      tags:
+        - auth
+      description: Log in user to OCRfix
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  $ref: "#/components/schemas/Email"
+                password:
+                  $ref: "#/components/schemas/Password"
+              required:
+                - email
+                - password
+      responses:
+        200:
+          $ref: "#/components/responses/200"
+        400:
+          $ref: "#/components/responses/400"
+        500:
+          $ref: "#/components/responses/500"
+
+  /ocr/predict:
+    post:
+      tags:
+        - ocr
+      description: Predict OCR from user's image (ML part)
+      parameters:
+        - $ref: "#/components/parameters/Authentication"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+              required:
+                - image
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+              example:
+                status: success
+                message: Success get OCR
+                data:
+                  ocr:
+                    - prediction: A
+                      probability: 0.6103497743606567
+                    - prediction: B
+                      probability: 0.9971645474433899
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        500:
+          $ref: "#/components/responses/500"
+
+  /ocr:
+    post:
+      tags:
+        - ocr
+      description: Create fixing of image detected by OCR
+      parameters:
+        - $ref: "#/components/parameters/Authentication"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                ocrs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      prediction:
+                        type: string
+                        example: A
+                      probability:
+                        type: number
+                        example: 0.6103497743606567
+                      actual:
+                        type: string
+                        example: B
+              required:
+                - image
+                - ocrs
+      responses:
+        200:
+          $ref: "#/components/responses/200"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        500:
+          $ref: "#/components/responses/500"
+
+    get:
+      tags:
+        - ocr
+      description: Get user's OCR history
+      parameters:
+        - $ref: "#/components/parameters/Authentication"
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+              example:
+                status: success
+                message: Success get OCR history
+                data:
+                  - ocr_id: 01933ea4-e741-7e25-a8d3-3271e0b46231
+                    image: https://example1.com
+                  - ocr_id: 01933ea5-6182-767a-aa22-58bdc827d045
+                    image: https://example2.com
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        500:
+          $ref: "#/components/responses/500"
+
+  /ocr/{ocrId}:
+    get:
+      tags:
+        - ocr
+      description: Get a OCR history
+      parameters:
+        - $ref: "#/components/parameters/Authentication"
+        - in: path
+          name: ocrId
+          schema:
+            type: string
+          required: true
+          description: UUID of a OCR history
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+              example:
+                status: success
+                message: Success get OCR details
+                data:
+                  - prediction: A
+                    probability: 0.6103497743606567
+                    actual: A
+                  - prediction: B
+                    probability: 0.9971645474433899
+                    actual: Z
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+        500:
+          $ref: "#/components/responses/500"
+
+    put:
+      tags:
+        - ocr
+      description: Update/edit the OCR history
+      parameters:
+        - $ref: "#/components/parameters/Authentication"
+        - in: path
+          name: ocrId
+          schema:
+            type: string
+          required: true
+          description: UUID of a OCR history
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ocrs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      detail_id:
+                        type: string
+                        example: 01933ea4-e741-7e25-a8d3-3271e0b45931
+                      actual:
+                        type: string
+                        example: B
+                  required:
+                    - ocrs
+      responses:
+        200:
+          $ref: "#/components/responses/200"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+        500:
+          $ref: "#/components/responses/500"
+
+    delete:
+      tags:
+        - ocr
+      description: Delete a OCR history
+      parameters:
+        - $ref: "#/components/parameters/Authentication"
+        - in: path
+          name: ocrId
+          schema:
+            type: string
+          required: true
+          description: UUID of a OCR history
+      responses:
+        200:
+          $ref: "#/components/responses/200"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+        500:
+          $ref: "#/components/responses/500"
+
+components:
+  responses:
+    200:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          example:
+            status: success
+            message: Login success
+            data: null
+    201:
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          example:
+            status: success
+            message: Data created
+            data: null
+    400:
+      description: Bad request, client side error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          example:
+            status: failed
+            message: Bad request
+            error:
+              - email already used
+    401:
+      description: Unauthorized access
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          example:
+            status: failed
+            message: Unauthorized
+            error:
+              - invalid bearer token
+    403:
+      description: Forbidden access
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          example:
+            status: failed
+            message: Forbidden
+            error:
+              - user not allowed to access resource
+    404:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          example:
+            status: failed
+            message: Not found
+            error:
+              - resources not found
+    500:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Response"
+          example:
+            status: failed
+            message: Internal error
+            error: null
+
+  parameters:
+    Authentication:
+      in: header
+      name: Authentication
+      schema:
+        type: string
+      required: true
+      description: JWT bearer token for authentication
+      example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+
+  schemas:
+    Response:
+      description: default response schema
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+            - failed
+        message:
+          type: string
+        data:
+          type: object
+          default: null
+        error:
+          type: array
+          default: null
+
+    Email:
+      type: string
+      nullable: false
+      example: uesr@ocrfix.com
+
+    Password:
+      type: string
+      nullable: false
+      example: Admin#1234
